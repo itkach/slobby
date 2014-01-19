@@ -9,7 +9,7 @@ from itertools import islice
 
 import cherrypy
 
-from slob import open_, find, UTF8
+from slob import open as slopen, find, UTF8
 
 
 KEY_VALUE_ROW = '<tr><td style="vertical-align: top">{0}</td><td>{1}</td></tr>'
@@ -41,7 +41,7 @@ class Root:
     def __init__(self, names, limit):
         self.slobs = {}
         for name in names:
-            slob = open_(name)
+            slob = slopen(name)
             self.slobs[slob.id] = slob
 
         self.lookup = Lookup(self.slobs, limit)
