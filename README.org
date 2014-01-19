@@ -1,0 +1,50 @@
+* Slobby
+
+  Slobby is a minimalistic web-based viewer for slob file content.
+
+** Installation
+
+   Create Python 3 virtual environment and installed slob.py as
+   described at http://github.org/itkach/slob/. In this virtual
+   environment run
+
+   #+BEGIN_SRC sh
+   pip install git+https://github.com/itkach/slobby.git
+   #+END_SRC
+
+
+** Usage
+
+   When Slobby starts, it opens specified slob files and starts a web
+   server, by default on port 8013, to allow browsing their content.
+
+   #+BEGIN_SRC
+python -m slobby [-h] [-p PORT] [-i INTERFACE] [-t THREADS] [-l LIMIT] [-b]
+                 [-m MOUNT_PATH]
+                 slob [slob ...]
+
+positional arguments:
+  slob                  Slob file name (or base name if opening slob split
+                        into multiple files)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PORT, --port PORT  Port for web server to listen on. Default: 8013
+  -i INTERFACE, --interface INTERFACE
+                        Network interface for web server to listen on.
+                        Default: 127.0.0.1
+  -t THREADS, --threads THREADS
+                        Number of threads in web server's thread pool.
+                        Default: 6
+  -l LIMIT, --limit LIMIT
+                        Maximum number of keys lookup may return. Default: 100
+  -b, --browse          Open web browser and load lookup page
+  -m MOUNT_PATH, --mount-path MOUNT_PATH
+                        Website root. This facilitates setting up access
+                        through a reverse proxy like nginx Default: /
+   #+END_SRC
+
+   For example, to serve all slob files in /~/Downloads// directory:
+   #+BEGIN_SRC
+   python -m slobby ~/Downloads/*.slob
+   #+END_SRC
