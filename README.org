@@ -4,7 +4,7 @@
 
 ** Installation
 
-   Create Python 3 virtual environment and installed slob.py as
+   Create Python 3 virtual environment and install slob.py as
    described at http://github.org/itkach/slob/. In this virtual
    environment run
 
