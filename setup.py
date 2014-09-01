@@ -10,4 +10,6 @@ setup(name='Slobby',
       license='GPL3',
       packages=['slobby'],
       package_data={'slobby': ['slobby.html']},
-      install_requires=['Slob >= 1.0', 'CherryPy >= 3.2'])
+      install_requires=['Slob >= 1.0', 'CherryPy >= 3.2'],
+      entry_points={'console_scripts': ['slobby=slobby:main']}
+)

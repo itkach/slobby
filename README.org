@@ -19,7 +19,7 @@
    server, by default on port 8013, to allow browsing their content.
 
    #+BEGIN_SRC
-python -m slobby [-h] [-p PORT] [-i INTERFACE] [-t THREADS] [-l LIMIT] [-b]
+slobby [-h] [-p PORT] [-i INTERFACE] [-t THREADS] [-l LIMIT] [-b]
                  [-m MOUNT_PATH]
                  slob [slob ...]
 
@@ -46,5 +46,5 @@ optional arguments:
 
    For example, to serve all slob files in /~/Downloads// directory:
    #+BEGIN_SRC
-   python -m slobby ~/Downloads/*.slob
+   slobby ~/Downloads/*.slob
    #+END_SRC
