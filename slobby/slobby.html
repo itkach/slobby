@@ -4,72 +4,7 @@
       Slobby
     </title>
     <style>
-     body {
-       height: 100%;
-       margin: 0px;
-       padding: 0px;
-       font-family: sans-serif;
-     }
-     #grid {
-      display: flex;
-      height: 100%;
-     }
-     #dict-link-container {
-       margin-top: 0.2em;
-      }
-     #dict-link {
-       font-size: small;
-       color: #6a6a6a;
-     }
-     #lookup-container {
-       width: 20em;
-       height: 100%;
-       overflow: auto;
-       border-right: thin solid gray;
-       background: lightgray;
-     }
-     #lookup-form-container {
-       display: flex;
-       margin-top: 0.3em;
-     }
-     #word {
-       flex: 1;
-       padding: 0.5em;
-       margin-left: 0.5em;
-     }
-     #submit-word {
-       flex: 0;
-       padding-right: 1.35em;
-       margin-right: 0.5em;
-       margin-left: 0.25em;
-       font-weight: bold;
-     }
-     #content {
-       height: 100%;
-       width: 100%;
-       border: 0;
-     }
-     #content-container {
-       flex: 1;
-       height: 100%;
-     }
-     ul {
-       list-style-type: none;
-       padding: 0;
-       margin: 0;
-       padding-left: 0.5em;
-       padding-right: 0.5em;
-     }
-     li a {
-      text-decoration: none;
-      padding: 0.25em;
-      color: #3a3a3a;
-      display: inline-block;
-      width: 100%;
-     }
-     li:hover{
-      background: darkgray;
-     }
+      {style}
     </style>
   </head>
   <body>
@@ -81,15 +16,15 @@
           </div>
           <form action="lookup" method="GET">
             <div id="lookup-form-container">
-              <input id="word" name="word" type="search" value="$word" autofocus>
+              <input id="word" name="word" type="search" value="{word}" autofocus>
               <input id="submit-word" type="submit" value="&crarr;">
             </div>
           </form>
         </div>
-          $wordlist
+        {wordlist}
       </div>
       <div id="content-container">
-        <iframe id="content" name="content" src="$content_url"> </iframe>
+        <iframe id="content" name="content" src="{content_url}"> </iframe>
       </div>
     </div>
   </body>

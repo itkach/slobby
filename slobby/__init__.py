@@ -1,9 +1,8 @@
 import argparse
+import functools
+import json
 import os
 import urllib
-import functools
-
-from string import Template
 
 from itertools import islice
 
@@ -13,7 +12,7 @@ from slob import open as slopen, find, UTF8
 
 
 KEY_VALUE_ROW = '<tr><td style="vertical-align: top">{0}</td><td>{1}</td></tr>'
-
+LI_VALUE = '<li>{}</li>'
 WORD_LI = '<li><a href="{0}" title="From {2}" target="content">{1}</a></li>'
 
 HTML = '''
@@ -29,8 +28,11 @@ NOTHING_FOUND = ('<div align="center"><em>'
 
 TPATH = os.path.join(os.path.dirname(__file__), 'slobby.html')
 with open(TPATH) as f:
-    TEMPLATE = Template(f.read())
+    TEMPLATE = f.read()
 
+CSSPATH = os.path.join(os.path.dirname(__file__), 'slobby.css')
+with open(CSSPATH) as f:
+    CSS = f.read()
 
 URL = functools.partial(cherrypy.url, relative='server')
 
@@ -45,7 +47,7 @@ class Root:
             self.slobs[slob.id] = slob
 
         self.lookup = Lookup(self.slobs, limit)
-        self.content = Content(self.slobs)
+        self.slob = Content(self.slobs)
         self.dictionaries = Dictionaries(self.slobs)
 
     def GET(self):
@@ -68,8 +70,17 @@ class Dictionaries:
             html.append('<h1>{0}</h1>'.format(title))
             html.append('<table>')
             html.append(KEY_VALUE_ROW.format('id', slob.id))
+            html.append(KEY_VALUE_ROW.format('encoding', slob.encoding))
+            html.append(KEY_VALUE_ROW.format('compression', slob.compression))
             html.append(KEY_VALUE_ROW.format('key count', len(slob)))
             html.append(KEY_VALUE_ROW.format('blob count', slob.blob_count))
+
+            content_types_list = ['<ul>']
+            for content_type in slob.content_types:
+                content_types_list.append(LI_VALUE.format(content_type))
+            content_types_list.append('</ul>')
+            html.append(KEY_VALUE_ROW.format('content types',
+                                             ''.join(content_types_list)))
             tags_table = ['<table>']
             for k, v in sorted(slob.tags.items()):
                 tags_table.append(KEY_VALUE_ROW.format(k, v))
@@ -117,9 +128,10 @@ class Lookup:
             html = []
         if content_url is None:
             content_url = 'about:blank'
-        ret = TEMPLATE.substitute(word=word or '',
-                                  wordlist=''.join(html),
-                                  content_url=content_url)
+        ret = TEMPLATE.format(style=CSS,
+                              word=word or '',
+                              wordlist=''.join(html),
+                              content_url=content_url)
         return ret
 
 
@@ -130,55 +142,93 @@ class Content:
     def __init__(self, slobs):
         self.slobs = slobs
 
-    def GET(self, word=None, _id=None):
-        if _id:
-            slob_id, blob_id = _id.split('-')
-            if slob_id not in self.slobs:
+    def to_info(self, s):
+        return {
+            'id': s.id,
+            'compression': s.compression,
+            'encoding': s.encoding,
+            'blobCount': s.blob_count,
+            'refCount': len(s),
+            'contentTypes': s.content_types,
+            'tags': dict(s.tags)
+        }
+
+    def find_slob(self, id_or_uri):
+        slob = self.slobs.get(id_or_uri)
+        if slob:
+            return slob, True
+        for slob in self.slobs.values():
+            uri = slob.tags.get('uri')
+            if uri and id_or_uri == uri:
+                return slob, False
+
+    def GET(self, *args, key=None, blob=None, **_kwargs):
+        print(args, key)
+        if len(args) == 0:
+            cherrypy.response.headers['Content-Type'] = 'application/json'
+            data = [self.to_info(s) for s in self.slobs.values()]
+            return json.dumps(data, indent=2).encode('utf8')
+        if len(args) == 1:
+            slob_id_or_uri = args[0]
+            slob, _ = self.find_slob(slob_id_or_uri)
+            if slob:
+                cherrypy.response.headers['Content-Type'] = 'application/json'
+                cherrypy.response.headers['Cache-Control'] = 'no-cache'
+                return json.dumps(self.to_info(slob), indent=2).encode('utf8')
+            else:
                 raise cherrypy.NotFound
-            content_type, content = self.slobs[slob_id].get(int(blob_id))
+
+        blob_id = blob
+
+        if len(args) >= 2:
+            key = '/'.join(args[1:])
+
+        slob_id_or_uri = args[0]
+        if_none_match = cherrypy.request.headers.get("If-None-Match")
+        slob, is_slob_id = self.find_slob(slob_id_or_uri)
+
+        if not slob:
+            raise cherrypy.NotFound
+
+        if is_slob_id and blob_id:
+            content_type, content = slob.get(int(blob_id))
             cherrypy.response.headers['Content-Type'] = content_type
+            cherrypy.response.headers['Cache-Control'] = 'max-age=31556926'
             return content
-        elif word:
-            #wsgi weirdness
-            word = word.encode('ISO-8859-1').decode('utf8')
-            try:
-                referer = cherrypy.request.headers.get('Referer')
-                if referer:
-                    p = urllib.parse.urlparse(referer)
-                    q = urllib.parse.parse_qs(p.query)
-                    if '_id' in q:
-                        preferred_id = q['_id'][0].split('-', 1)[0]
-                        if preferred_id in self.slobs:
-                            try:
-                                slob, item = next(find(word,
-                                                       self.slobs[preferred_id],
-                                                       match_prefix=False))
-                            except StopIteration:
-                                pass
-                            else:
-                                direct_to(slob, item)
-                slob, item = next(find(word, self.slobs.values(),
-                                       match_prefix=False))
-                # Redirect instead of returning content like directly so that
-                # referer header always contains slob id to look there first
-                # when folloing links
-                ## cherrypy.response.headers['Content-Type'] = item.content_type
-                ## return item.content
-                direct_to(slob, item)
-            except StopIteration:
-                pass
-        return NOTHING_FOUND.format(word if word else _id)
+
+        if key and if_none_match:
+            e_tag = '"{}"'.format(slob.id)
+            if if_none_match == e_tag:
+                cherrypy.response.status = 304
+                return
+
+        #wsgi weirdness
+        key = key.encode('ISO-8859-1').decode('utf8')
+
+        print ('Key:', repr(key))
+        print ('Slob:', slob)
+
+        for slob, item in find(key, slob, match_prefix=False):
+            if is_slob_id:
+                cherrypy.response.headers['Cache-Control'] = 'max-age=31556926'
+            else:
+                cherrypy.response.headers['Cache-Control'] = 'max-age=600'
+                e_tag = '"{}"'.format(slob.id)
+                cherrypy.response.headers['ETag'] = e_tag
+                cherrypy.response.headers['Content-Type'] = item.content_type
+            return item.content
+
+        cherrypy.response.status = 404
+        return NOTHING_FOUND.format(key if key else blob)
 
 
 def mk_content_link(slob_id, item):
-    href = '/content/?_id={slob_id}-{content_id}#{fragment}'.format(
+    href = '/slob/{slob_id}/{key}?blob={blob_id}#{fragment}'.format(
         slob_id=slob_id,
-        content_id=item.id,
+        key=item.key,
+        blob_id=item.id,
         fragment=item.fragment)
     return URL(href)
-
-def direct_to(slob, item):
-    raise cherrypy.HTTPRedirect(mk_content_link(slob.id, item))
 
 
 def main():

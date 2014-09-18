@@ -9,7 +9,7 @@ setup(name='Slobby',
       url='http://github.com/itkach/slobby',
       license='GPL3',
       packages=['slobby'],
-      package_data={'slobby': ['slobby.html']},
+      package_data={'slobby': ['slobby.html', 'slobby.css']},
       install_requires=['Slob >= 1.0', 'CherryPy >= 3.2'],
       entry_points={'console_scripts': ['slobby=slobby:main']}
 )
