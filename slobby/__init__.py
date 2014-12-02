@@ -87,7 +87,8 @@ class Dictionaries:
             tags_table.append('</table>')
             html.append(KEY_VALUE_ROW.format('tags', ''.join(tags_table)))
             html.append('</table>')
-        return HTML.format(''.join(html))
+        cherrypy.response.headers['Content-Type'] = 'text/html;charset:utf-8'
+        return HTML.format(''.join(html)).encode('utf-8')
 
 
 class Lookup:
@@ -132,7 +133,8 @@ class Lookup:
                               word=word or '',
                               wordlist=''.join(html),
                               content_url=content_url)
-        return ret
+        cherrypy.response.headers['Content-Type'] = 'text/html;charset:utf-8'
+        return ret.encode('utf-8')
 
 
 class Content:
@@ -163,7 +165,7 @@ class Content:
                 return slob, False
 
     def GET(self, *args, key=None, blob=None, **_kwargs):
-        print(args, key)
+        print(args, key, blob)
         if len(args) == 0:
             cherrypy.response.headers['Content-Type'] = 'application/json'
             data = [self.to_info(s) for s in self.slobs.values()]
@@ -215,7 +217,7 @@ class Content:
                 cherrypy.response.headers['Cache-Control'] = 'max-age=600'
                 e_tag = '"{}"'.format(slob.id)
                 cherrypy.response.headers['ETag'] = e_tag
-                cherrypy.response.headers['Content-Type'] = item.content_type
+            cherrypy.response.headers['Content-Type'] = item.content_type
             return item.content
 
         cherrypy.response.status = 404
@@ -273,6 +275,8 @@ def main():
                 host = args.interface
             webbrowser.open('http://{0}:{1}/'.format(host, args.port))
         cherrypy.engine.subscribe('start', open_browser)
+
+    cherrypy.config.update({'tools.encode.on': False})
 
     config = {'/': {'request.dispatch': cherrypy.dispatch.MethodDispatcher()}}
     cherrypy.quickstart(Root(args.slob, args.limit),
