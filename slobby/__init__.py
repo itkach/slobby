@@ -218,10 +218,11 @@ class Content:
                 e_tag = '"{}"'.format(slob.id)
                 cherrypy.response.headers['ETag'] = e_tag
             cherrypy.response.headers['Content-Type'] = item.content_type
+
             return item.content
 
         cherrypy.response.status = 404
-        return NOTHING_FOUND.format(key if key else blob)
+        return NOTHING_FOUND.format(key if key else blob).encode('utf-8')
 
 
 def mk_content_link(slob_id, item):
