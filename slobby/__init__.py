@@ -264,7 +264,7 @@ def main():
         'server.socket_port': args.port,
         'server.thread_pool': args.threads,
         'server.socket_host': args.interface,
-        'tools.encode.on': True
+        'tools.encode.on': False
     })
 
     if args.browse:
@@ -276,8 +276,6 @@ def main():
                 host = args.interface
             webbrowser.open('http://{0}:{1}/'.format(host, args.port))
         cherrypy.engine.subscribe('start', open_browser)
-
-    cherrypy.config.update({'tools.encode.on': False})
 
     config = {'/': {'request.dispatch': cherrypy.dispatch.MethodDispatcher()}}
     cherrypy.quickstart(Root(args.slob, args.limit),
